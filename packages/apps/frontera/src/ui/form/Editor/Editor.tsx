@@ -32,7 +32,6 @@ import {
 import { cn } from '@ui/utils/cn';
 import { SelectOption } from '@ui/utils/types';
 import { LinkPastePlugin } from '@ui/form/Editor/plugins/PastePlugin';
-import VariablesPlugin from '@ui/form/Editor/plugins/VariablesPlugin';
 import TextNodeTransformer from '@ui/form/Editor/nodes/TextTransformar.ts';
 
 import { nodes } from './nodes/nodes';
@@ -40,10 +39,36 @@ import { HashtagNode } from './nodes/HashtagNode';
 import MentionsPlugin from './plugins/MentionsPlugin';
 import AutoLinkPlugin from './plugins/AutoLinkPlugin';
 import HashtagsPlugin from './plugins/HashtagsPlugin';
+import VariablePlugin from './plugins/VariablesPlugin';
 import FloatingLinkEditorPlugin from './plugins/FloatingLinkEditorPlugin';
 import { FloatingMenuPlugin } from './plugins/FloatingTextFormatToolbarPlugin';
 
 const theme: EditorThemeClasses = {
+  paragraph: 'my-3',
+  list: {
+    ulDepth: [
+      'p-0 m-0 list-outside',
+      'p-0 m-0 list-outside list-circle',
+      'p-0 m-0 list-outside list-square',
+      'p-0 m-0 list-outside list-disc',
+      'p-0 m-0 list-outside list-circle',
+    ],
+    nested: {
+      listitem: 'editor__nestedListItem',
+    },
+    ol: 'p-0 m-0 list-outside list-decimal',
+    ul: 'p-0 m-0 list-outside list-disc',
+    listitem: 'mx-8',
+    olDepth: [
+      'p-0 m-0 list-outside',
+      'p-0 m-0 list-outside list-upperalpha',
+      'p-0 m-0 list-outside list-loweralpha',
+      'p-0 m-0 list-outside list-upperroman',
+      'p-0 m-0 list-outside list-lowerroman',
+    ],
+    listitemChecked: 'editor__listItemChecked',
+    listitemUnchecked: 'editor__listItemUnchecked',
+  },
   text: {
     bold: 'editor-textBold',
     code: 'editor-textCode',
@@ -54,12 +79,7 @@ const theme: EditorThemeClasses = {
     underline: 'editor-textUnderline',
     underlineStrikethrough: 'editor-textUnderlineStrikethrough',
   },
-  blockquote: {
-    css: `
-      border-left: 2px solid #D0D5DD;
-      padding-left: 12px;
-    `,
-  },
+  quote: 'border-l-[2px] border-gray-300 pl-3 my-3',
 };
 
 const onError = (error: Error) => {
@@ -192,6 +212,7 @@ export const Editor = forwardRef<LexicalEditor | null, EditorProps>(
           <AutoLinkPlugin />
           <HistoryPlugin />
           <AutoFocusPlugin />
+          {/* Used for stripping styles of copy-pasted text */}
           <TextNodeTransformer />
           <ListPlugin />
 
@@ -208,7 +229,7 @@ export const Editor = forwardRef<LexicalEditor | null, EditorProps>(
           <LinkPastePlugin />
 
           {variableOptions?.length > 0 && (
-            <VariablesPlugin options={variableOptions} />
+            <VariablePlugin options={variableOptions} />
           )}
 
           {onHashtagSearch && (
