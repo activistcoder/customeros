@@ -619,7 +619,7 @@ func (s *fileService) GetFilePublicUrl(ctx context.Context, tenant, fileId strin
 	}
 
 	// set public url and expiration time
-	err = s.commonServices.Neo4jRepositories.CommonWriteRepository.UpdateStringProperty(ctx, tenant, commonmodel.ATTACHMENT.Neo4jLabel(), fileId, string(neo4jentity.AttachmentPropertyPublicUrl), publicUrl)
+	err = s.commonServices.Neo4jRepositories.CommonWriteRepository.UpdateStringProperty(ctx, nil, tenant, commonmodel.ATTACHMENT.Neo4jLabel(), fileId, string(neo4jentity.AttachmentPropertyPublicUrl), publicUrl)
 	if err != nil {
 		tracing.TraceErr(span, errors.Wrap(err, "Error updating attachment public url"))
 	}
