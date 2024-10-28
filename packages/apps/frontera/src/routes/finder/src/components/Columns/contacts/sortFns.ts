@@ -12,9 +12,8 @@ export const getContactSortFn = (columnId: string) =>
     .with(
       ColumnViewType.ContactsOrganization,
       () => (row: ContactStore) =>
-        row.value?.organizations?.content?.[0]?.name
-          ?.trim()
-          .toLocaleLowerCase() || null,
+        row.value?.latestOrganizationWithJobRole?.organization?.name.toLowerCase() ||
+        null,
     )
     .with(
       ColumnViewType.ContactsCity,
@@ -58,8 +57,8 @@ export const getContactSortFn = (columnId: string) =>
     .with(ColumnViewType.ContactsFlows, () => (row: ContactStore) => {
       return row.flow?.value?.name?.toLowerCase() || null;
     })
-    .with(ColumnViewType.ContactsUpdatedAt, () => (row: ContactStore) => {
-      return row.value.updatedAt;
+    .with(ColumnViewType.ContactsCreatedAt, () => (row: ContactStore) => {
+      return row.value.createdAt;
     })
 
     .otherwise(() => (_row: ContactStore) => false);
