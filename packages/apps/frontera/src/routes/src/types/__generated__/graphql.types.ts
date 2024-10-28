@@ -1441,6 +1441,8 @@ export enum EmailVariableName {
   ContactFullName = 'CONTACT_FULL_NAME',
   ContactLastName = 'CONTACT_LAST_NAME',
   OrganizationName = 'ORGANIZATION_NAME',
+  SenderFirstName = 'SENDER_FIRST_NAME',
+  SenderLastName = 'SENDER_LAST_NAME',
 }
 
 export type EnrichDetails = {
