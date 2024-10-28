@@ -15,6 +15,7 @@ import {
 
 import { getFilterTypes as getFilterTypesForContacts } from '../Columns/contacts/filterTypes';
 import { getFilterTypes as getFilterTypesForOrganizations } from '../Columns/organizations/filterTypes';
+import { getFilterTypes as getFilterTypesForOpportunities } from '../Columns/opportunities/filterTypes';
 
 export const FinderFilters = observer(
   ({ tableId, type }: { type: TableViewType; tableId: TableIdType }) => {
@@ -22,13 +23,15 @@ export const FinderFilters = observer(
     const getFilterTypes = match(tableId)
       .with(TableIdType.Contacts, () => getFilterTypesForContacts)
       .with(TableIdType.Organizations, () => getFilterTypesForOrganizations)
+      .with(
+        TableIdType.OpportunitiesRecords,
+        () => getFilterTypesForOpportunities,
+      )
       .otherwise(() => getFilterTypesForOrganizations);
 
     const [searchParams] = useSearchParams();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [optionsMap, helperTextMap] = useTableColumnOptionsMap(type as any);
-
-    const filterTypes = getFilterTypes(store);
 
     const preset = match(tableId)
       .with(
@@ -36,6 +39,8 @@ export const FinderFilters = observer(
         () => store.tableViewDefs.opportunitiesPreset,
       )
       .otherwise(() => searchParams?.get('preset'));
+
+    const filterTypes = getFilterTypes(store);
 
     const tableViewDef = store.tableViewDefs.getById(preset ?? '0');
 
