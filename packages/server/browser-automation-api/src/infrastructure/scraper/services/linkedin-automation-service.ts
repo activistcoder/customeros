@@ -300,6 +300,124 @@ export class LinkedinAutomationService {
     }
   }
 
+  async retrieveMessages(profileUrl: string) {
+    const browser = await Browser.getFreshInstance(this.proxyConfig);
+    const context = await browser.newContext({
+      userAgent: this.userAgent,
+    });
+
+    await context.addCookies(this.cookies);
+    const page = await context.newPage();
+
+    try {
+      await page.goto(profileUrl, { timeout: 60 * 1000 });
+
+      const btn = page.locator('button.pvs-profile-actions__action', { hasText: 'Message' });
+      await btn.waitFor({ timeout: 10000 });
+      await btn.click();
+
+      await page.waitForSelector('.msg-s-message-list', { timeout: 10000 });
+
+      await page.evaluate(() => {
+        const messageList = document.querySelector('.msg-s-message-list');
+        if (messageList) {
+          messageList.scrollTop = 0;
+        }
+      });
+      await page.waitForTimeout(1000);
+
+      await page.evaluate(() => {
+        const messageList = document.querySelector('.msg-s-message-list');
+        if (messageList) {
+          messageList.scrollTop = messageList.scrollHeight;
+        }
+      });
+      await page.waitForTimeout(2000);
+
+      const messages = [];
+      let lastValidName = '';
+      let lastValidTime = '';
+      let currentTime = '';
+      let timeIndex = 1;
+
+      const messageElements = await page.locator('li.msg-s-message-list__event').all();
+      logger.info(`Found ${messageElements.length} message elements`, { source: "LinkedinService" });
+
+      for (const element of messageElements) {
+        try {
+          const elementInfo = await element.evaluate((el) => {
+            const nameEl = el.querySelector('.msg-s-message-group__name');
+            const timeEl = el.querySelector('time.msg-s-message-group__timestamp');
+            const msgEl = el.querySelector('p.msg-s-event-listitem__body');
+            const linkPreviewEl = el.querySelector('.msg-s-event-listitem__content-preview-container');
+
+            return {
+              name: nameEl?.textContent?.trim() || '',
+              time: timeEl?.textContent?.trim() || '',
+              message: (() => {
+                let sanitizedMessage = msgEl?.textContent?.trim() || '';
+                let previous;
+                do {
+                  previous = sanitizedMessage;
+                  sanitizedMessage = sanitizedMessage.replace(/<!---->|<.*?>/g, '');
+                } while (sanitizedMessage !== previous);
+                return sanitizedMessage;
+              })() || '',
+              altName: el.querySelector('.msg-s-message-group__profile-link')?.textContent?.trim() || '',
+              altMessage: el.querySelector('.msg-s-event-listitem__content-preview-container')?.textContent?.trim() || '',
+              hasLinkPreview: !!linkPreviewEl
+            };
+          });
+
+          const finalName = elementInfo.name || elementInfo.altName || lastValidName;
+          const finalTime = elementInfo.time || lastValidTime;
+
+          let finalMessage;
+          if (elementInfo.message) {
+            finalMessage = elementInfo.message;
+          } else if (elementInfo.hasLinkPreview) {
+            finalMessage = "External link";
+          } else {
+            finalMessage = elementInfo.altMessage || "Unable to parse message";
+          }
+
+          if (!finalMessage) {
+            continue;
+          }
+
+          // Reset timeIndex if time changes
+          if (finalTime !== currentTime) {
+            currentTime = finalTime;
+            timeIndex = 1;
+          }
+
+          messages.push({
+            name: finalName,
+            time: finalTime,
+            timeIndex,
+            message: finalMessage
+          });
+
+          lastValidName = finalName;
+          lastValidTime = finalTime;
+          timeIndex++; // Increment for next message with same timestamp
+
+        } catch (err) {
+          logger.error(`Error processing message element: ${err}`, { source: "LinkedinService" });
+        }
+      }
+
+      logger.info(`Found ${messages.length} messages`, { source: "LinkedinService" });
+
+      return messages;
+
+    } catch (err) {
+      throw LinkedinAutomationService.handleError(err);
+    } finally {
+      await browser.close();
+    }
+  }
+
   async getConnectionsNew(): Promise<
     [results: string[], error: StandardError | null]
   > {

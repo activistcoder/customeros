@@ -36,5 +36,6 @@ export class LinkedinRouter {
       ...connectValidators,
       this.connectController.sendConnectionInvite,
     );
+    this.router.post("/messages", this.messagesController.retrieveMessages);
   }
 }
