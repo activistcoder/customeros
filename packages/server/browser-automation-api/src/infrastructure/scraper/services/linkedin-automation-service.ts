@@ -3,7 +3,7 @@ import { Writable } from "stream";
 import { FrameLocator } from "playwright";
 import { setTimeout } from "timers/promises";
 import { setTimeout as setTimeoutSync } from "timers";
-
+import { TimeUtils } from '@/util/utilities';
 import { Browser } from "../browser";
 import { logger } from "@/infrastructure";
 import { ErrorParser, StandardError } from "@/util/error";
@@ -306,6 +306,7 @@ export class LinkedinAutomationService {
       userAgent: this.userAgent,
     });
 
+    let lastKnownTime: string | null = null;
     await context.addCookies(this.cookies);
     const page = await context.newPage();
 
@@ -339,6 +340,9 @@ export class LinkedinAutomationService {
       let lastValidTime = '';
       let currentTime = '';
       let timeIndex = 1;
+      const thisYear = new Date().getFullYear();  // Current year
+      let currentYear = thisYear;  // Default to current year
+      let currentDate: Date | null = null;
 
       const messageElements = await page.locator('li.msg-s-message-list__event').all();
       logger.info(`Found ${messageElements.length} message elements`, { source: "LinkedinService" });
@@ -350,6 +354,7 @@ export class LinkedinAutomationService {
             const timeEl = el.querySelector('time.msg-s-message-group__timestamp');
             const msgEl = el.querySelector('p.msg-s-event-listitem__body');
             const linkPreviewEl = el.querySelector('.msg-s-event-listitem__content-preview-container');
+            const dateHeadingEl = el.querySelector('.msg-s-message-list__time-heading');
 
             return {
               name: nameEl?.textContent?.trim() || '',
@@ -365,12 +370,38 @@ export class LinkedinAutomationService {
               })() || '',
               altName: el.querySelector('.msg-s-message-group__profile-link')?.textContent?.trim() || '',
               altMessage: el.querySelector('.msg-s-event-listitem__content-preview-container')?.textContent?.trim() || '',
-              hasLinkPreview: !!linkPreviewEl
+              hasLinkPreview: !!linkPreviewEl,
+              dateHeading: dateHeadingEl?.textContent?.trim() || ''
             };
           });
 
+          // Parse the date heading and update current date context
+          if (elementInfo.dateHeading) {
+            // Check if this heading contains a full date with year
+            const hasExplicitYear = elementInfo.dateHeading.match(/\d{4}/);
+
+            const parsedDate = TimeUtils.parseDateHeading(elementInfo.dateHeading, currentYear);
+            if (parsedDate) {
+              if (hasExplicitYear) {
+                // If the date has an explicit year, use it
+                currentYear = parsedDate.year;
+              } else {
+                // If no explicit year, use current year
+                parsedDate.year = thisYear;
+              }
+              currentDate = TimeUtils.createDate(parsedDate);
+            }
+          }
+
           const finalName = elementInfo.name || elementInfo.altName || lastValidName;
-          const finalTime = elementInfo.time || lastValidTime;
+
+          const timeToConvert = elementInfo.time || lastKnownTime || '';
+          const finalTime = TimeUtils.convertToZuluTime(timeToConvert, currentDate);
+
+// Update last known time only if we have a non-empty time
+          if (elementInfo.time) {
+            lastKnownTime = elementInfo.time;
+          }
 
           let finalMessage;
           if (elementInfo.message) {
@@ -400,17 +431,14 @@ export class LinkedinAutomationService {
 
           lastValidName = finalName;
           lastValidTime = finalTime;
-          timeIndex++; // Increment for next message with same timestamp
+          timeIndex++;
 
         } catch (err) {
           logger.error(`Error processing message element: ${err}`, { source: "LinkedinService" });
         }
       }
 
-      logger.info(`Found ${messages.length} messages`, { source: "LinkedinService" });
-
       return messages;
-
     } catch (err) {
       throw LinkedinAutomationService.handleError(err);
     } finally {
