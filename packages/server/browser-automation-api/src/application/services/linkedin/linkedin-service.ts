@@ -167,6 +167,29 @@ export class LinkedinService {
     }
   }
 
+  async retrieveRecentPosts(payload: unknown) {
+    const { profileUrl } = payload as {
+      profileUrl: string;
+    };
+
+    try {
+      logger.info("Retrieving recent posts", {
+        source: "LinkedinService",
+      });
+      const recentPosts = await this.linkedinAutomationService.retrieveRecentPosts(profileUrl);
+
+      logger.info("Recent posts retrieved", {
+        source: "LinkedinService",
+      });
+      return { profileUrl, recentPosts };
+    } catch (err) {
+      logger.info("Failed to get retrieve recent posts", {
+        source: "LinkedinService",
+      });
+      throw LinkedinService.handleError(err);
+    }
+  }
+
   async retrieveMessages(payload: unknown) {
     const { profileUrl } = payload as {
       profileUrl: string;
