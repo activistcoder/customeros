@@ -7,7 +7,6 @@ package resolver
 import (
 	"context"
 	"fmt"
-
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/dataloader"
 	"github.com/openline-ai/openline-customer-os/packages/server/customer-os-api/graph/generated"
@@ -136,7 +135,7 @@ func (r *mutationResolver) FlowChangeStatus(ctx context.Context, id string, stat
 		return nil, err
 	}
 
-	//TODO this is correct and used in testing
+	//TODO this is correct and used in testing for email
 	//tenant := common.GetTenantFromContext(ctx)
 	//
 	//t := true
@@ -234,6 +233,79 @@ func (r *mutationResolver) FlowChangeStatus(ctx context.Context, id string, stat
 	//	tracing.TraceErr(span, err)
 	//	graphql.AddErrorf(ctx, "")
 	//	return nil, err
+	//}
+	//
+	//e, err = r.Services.CommonServices.FlowService.FlowChangeStatus(ctx, e.Id, neo4jentity.FlowStatusActive)
+	//if err != nil {
+	//	tracing.TraceErr(span, err)
+	//	graphql.AddErrorf(ctx, "")
+	//	return nil, err
+	//}
+
+	//TODO this is correct and used in testing sending linkedin connections
+	//tenant := common.GetTenantFromContext(ctx)
+	//
+	//t := true
+	//
+	//for i := 1; i <= 100; i++ {
+	//	contactId, err := r.Services.ContactService.Create(ctx, &service.ContactCreateData{
+	//		ContactEntity: &neo4jentity.ContactEntity{
+	//			FirstName: "Test",
+	//			LastName:  fmt.Sprintf("%d", i),
+	//		},
+	//		EmailEntity: &neo4jentity.EmailEntity{
+	//			RawEmail: fmt.Sprintf("%d@test.com", i),
+	//			Work:     &t,
+	//		},
+	//		SocialUrl: fmt.Sprintf("https://www.linkedin.com/in/%d", i),
+	//	})
+	//
+	//	if err != nil {
+	//		tracing.TraceErr(span, err)
+	//		graphql.AddErrorf(ctx, "")
+	//		return nil, err
+	//	}
+	//
+	//	_, err = r.Services.CommonServices.FlowService.FlowParticipantAdd(ctx, e.Id, contactId, commonModel.CONTACT)
+	//	if err != nil {
+	//		tracing.TraceErr(span, err)
+	//		graphql.AddErrorf(ctx, "")
+	//		return nil, err
+	//	}
+	//}
+	//
+	//for i := 1; i <= 2; i++ {
+	//	userId := uuid.New().String()
+	//	err = r.Services.CommonServices.Neo4jRepositories.UserWriteRepository.CreateUser(ctx, neo4jentity.UserEntity{Id: userId})
+	//
+	//	for i := 1; i <= 1; i++ {
+	//		userEmail := fmt.Sprintf("mailbox%d@test.com%s", i, uuid.New().String())
+	//		emailId := uuid.New().String()
+	//		r.Services.CommonServices.Neo4jRepositories.EmailWriteRepository.CreateEmail(ctx, tenant, emailId, repository.EmailCreateFields{RawEmail: userEmail})
+	//		r.Services.CommonServices.Neo4jRepositories.EmailWriteRepository.LinkWithUser(ctx, tenant, userId, emailId, true)
+	//		r.Services.CommonServices.PostgresRepositories.BrowserConfigRepository.Merge(ctx, &entity.BrowserConfig{
+	//			Tenant: tenant,
+	//			UserId: userId,
+	//			Status: "VALID",
+	//		})
+	//	}
+	//
+	//	r.FlowSenderMerge(ctx, e.Id, model.FlowSenderMergeInput{
+	//		UserID: &userId,
+	//	})
+	//
+	//	schedule3 := entity.UserWorkingSchedule{
+	//		UserId:    userId,
+	//		DayRange:  "Mon-Sun",
+	//		StartHour: "08:00",
+	//		EndHour:   "18:00",
+	//	}
+	//	err = r.Services.Repositories.PostgresRepositories.UserWorkingScheduleRepository.Store(ctx, tenant, &schedule3)
+	//	if err != nil {
+	//		tracing.TraceErr(span, err)
+	//		graphql.AddErrorf(ctx, "")
+	//		return nil, err
+	//	}
 	//}
 	//
 	//e, err = r.Services.CommonServices.FlowService.FlowChangeStatus(ctx, e.Id, neo4jentity.FlowStatusActive)
