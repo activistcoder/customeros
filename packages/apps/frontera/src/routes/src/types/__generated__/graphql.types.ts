@@ -2296,7 +2296,6 @@ export type Mutation = {
   contact_RemoveLocation: Contact;
   contact_RemoveSocial: ActionResponse;
   contact_RemoveTag: ActionResponse;
-  contact_RestoreFromArchive: Result;
   contact_Update: Contact;
   contractLineItem_Close: Scalars['ID']['output'];
   contractLineItem_Create: ServiceLineItem;
@@ -2374,18 +2373,11 @@ export type Mutation = {
   opportunityRenewalUpdate: Opportunity;
   opportunityRenewal_UpdateAllForOrganization: Organization;
   opportunity_Archive: ActionResponse;
-  opportunity_Create: Opportunity;
-  opportunity_RemoveOwner: ActionResponse;
   opportunity_Save: Opportunity;
-  opportunity_SetOwner: ActionResponse;
-  opportunity_Update: Opportunity;
-  organization_AddNewLocation: Location;
   organization_AddSocial: Social;
   organization_AddSubsidiary: Organization;
   /** @deprecated No longer supported */
   organization_AddTag: ActionResponse;
-  organization_Archive?: Maybe<Result>;
-  organization_ArchiveAll?: Maybe<Result>;
   organization_Hide: Scalars['ID']['output'];
   organization_HideAll?: Maybe<Result>;
   organization_Merge: Organization;
@@ -2550,10 +2542,6 @@ export type MutationContact_RemoveSocialArgs = {
 
 export type MutationContact_RemoveTagArgs = {
   input: ContactTagInput;
-};
-
-export type MutationContact_RestoreFromArchiveArgs = {
-  contactId: Scalars['ID']['input'];
 };
 
 export type MutationContact_UpdateArgs = {
@@ -2907,29 +2895,8 @@ export type MutationOpportunity_ArchiveArgs = {
   id: Scalars['ID']['input'];
 };
 
-export type MutationOpportunity_CreateArgs = {
-  input: OpportunityCreateInput;
-};
-
-export type MutationOpportunity_RemoveOwnerArgs = {
-  opportunityId: Scalars['ID']['input'];
-};
-
 export type MutationOpportunity_SaveArgs = {
   input: OpportunitySaveInput;
-};
-
-export type MutationOpportunity_SetOwnerArgs = {
-  opportunityId: Scalars['ID']['input'];
-  userId: Scalars['ID']['input'];
-};
-
-export type MutationOpportunity_UpdateArgs = {
-  input: OpportunityUpdateInput;
-};
-
-export type MutationOrganization_AddNewLocationArgs = {
-  organizationId: Scalars['ID']['input'];
 };
 
 export type MutationOrganization_AddSocialArgs = {
@@ -2943,14 +2910,6 @@ export type MutationOrganization_AddSubsidiaryArgs = {
 
 export type MutationOrganization_AddTagArgs = {
   input: OrganizationTagInput;
-};
-
-export type MutationOrganization_ArchiveArgs = {
-  id: Scalars['ID']['input'];
-};
-
-export type MutationOrganization_ArchiveAllArgs = {
-  ids: Array<Scalars['ID']['input']>;
 };
 
 export type MutationOrganization_HideArgs = {
