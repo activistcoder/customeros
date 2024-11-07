@@ -4,7 +4,6 @@ import { RootStore } from '@store/root';
 import { Transport } from '@store/transport';
 import { SyncableGroup } from '@store/syncable-group';
 import {
-  when,
   action,
   computed,
   override,
@@ -24,6 +23,7 @@ import {
   SortingDirection,
   OrganizationInput,
   OrganizationStage,
+  ComparisonOperator,
   OrganizationRelationship,
   OpportunityRenewalLikelihood,
 } from '@graphql/types';
@@ -45,25 +45,22 @@ export class OrganizationsStore extends SyncableGroup<
 
     makeObservable(this, {
       maxLtv: computed,
-      isFullyLoaded: computed,
       hide: action.bound,
       merge: action.bound,
       create: action.bound,
       channelName: override,
+      isFullyLoaded: computed,
       updateStage: action.bound,
       totalElements: observable,
+      getRecentChanges: override,
     });
-
-    when(
-      () =>
-        this.isBootstrapped && this.totalElements > 0 && !this.root.demoMode,
-      async () => {
-        await this.bootstrapRest();
-      },
-    );
   }
 
   get channelName() {
+    return 'Organizations';
+  }
+
+  get persisterKey() {
     return 'Organizations';
   }
 
@@ -104,6 +101,112 @@ export class OrganizationsStore extends SyncableGroup<
     }
   }
 
+  async getRecentChanges() {
+    try {
+      if (this.root.demoMode || this.isBootstrapping) {
+        return;
+      }
+
+      this.isLoading = true;
+
+      const lastActiveAtUTC = this.root.windowManager
+        .getLastActiveAtUTC()
+        .toISOString();
+
+      const where = {
+        AND: [
+          {
+            filter: {
+              property: 'UPDATED_AT',
+              value: lastActiveAtUTC,
+              operation: ComparisonOperator.Gte,
+            },
+          },
+        ],
+      };
+
+      const { organizations_HiddenAfter: idsToDrop } =
+        await this.service.getArchivedOrganizationsAfter({
+          date: lastActiveAtUTC,
+        });
+
+      const { dashboardView_Organizations } =
+        await this.service.getOrganizations({
+          pagination: { limit: 1000, page: 0 },
+          sort: {
+            by: 'LAST_TOUCHPOINT',
+            caseSensitive: false,
+            direction: SortingDirection.Desc,
+          },
+          where,
+        });
+
+      if (this.isHydrated) {
+        await this.drop(idsToDrop);
+      } else {
+        await this.hydrate({
+          idsToDrop,
+          getId: (data) => data.metadata.id,
+        });
+      }
+
+      const data =
+        (dashboardView_Organizations?.content as Organization[]) ?? [];
+      const totalElements = dashboardView_Organizations?.totalElements;
+
+      this.load(data, {
+        getId: (item) => item.metadata.id,
+      });
+      runInAction(() => {
+        this.totalElements = totalElements;
+      });
+    } catch (e) {
+      runInAction(() => {
+        this.error = (e as Error)?.message;
+      });
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
+  }
+
+  async getAllData() {
+    this.isBootstrapping = true;
+
+    try {
+      const { dashboardView_Organizations } =
+        await this.service.getOrganizations({
+          pagination: { limit: 1000, page: 0 },
+          sort: {
+            by: 'LAST_TOUCHPOINT',
+            caseSensitive: false,
+            direction: SortingDirection.Desc,
+          },
+        });
+
+      const data =
+        (dashboardView_Organizations?.content as Organization[]) ?? [];
+      const totalElements = dashboardView_Organizations?.totalElements;
+
+      this.load(data, {
+        getId: (item) => item.metadata.id,
+      });
+      runInAction(() => {
+        this.totalElements = totalElements;
+      });
+      await this.bootstrapRest();
+    } catch (e) {
+      runInAction(() => {
+        this.error = (e as Error)?.message;
+      });
+    } finally {
+      runInAction(() => {
+        this.isLoading = false;
+      });
+    }
+  }
+
   async bootstrap() {
     if (this.root.demoMode) {
       this.load(
@@ -116,35 +219,19 @@ export class OrganizationsStore extends SyncableGroup<
       return;
     }
 
-    if (this.isBootstrapped || this.isLoading) return;
+    if (this.isLoading) return;
 
     try {
-      this.isLoading = true;
+      const canHydrate = await this.checkIfCanHydrate();
 
-      const { dashboardView_Organizations } =
-        await this.service.getOrganizations({
-          pagination: { limit: 1000, page: 0 },
-          sort: {
-            by: 'LAST_TOUCHPOINT',
-            caseSensitive: false,
-            direction: SortingDirection.Desc,
-          },
-        });
-
-      this.load(dashboardView_Organizations?.content as Organization[], {
-        getId: (data) => data.metadata.id,
-      });
-      runInAction(() => {
-        this.isBootstrapped = true;
-        this.totalElements = dashboardView_Organizations?.totalElements;
-      });
+      if (canHydrate) {
+        this.getRecentChanges();
+      } else {
+        this.getAllData();
+      }
     } catch (e) {
       runInAction(() => {
         this.error = (e as Error)?.message;
-      });
-    } finally {
-      runInAction(() => {
-        this.isLoading = false;
       });
     }
   }
@@ -177,6 +264,9 @@ export class OrganizationsStore extends SyncableGroup<
         break;
       }
     }
+
+    this.isBootstrapped = this.totalElements === this.value.size;
+    this.isBootstrapping = false;
   }
 
   toArray() {

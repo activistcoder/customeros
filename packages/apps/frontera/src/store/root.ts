@@ -1,13 +1,13 @@
-import localforage from 'localforage';
 import { when, makeAutoObservable } from 'mobx';
-import { configurePersistable } from 'mobx-persist-store';
 import { FlowSendersStore } from '@store/FlowSenders/FlowSenders.store.ts';
 
 import type { Transport } from './transport';
 
+import { Persister } from './persister';
 import { UIStore } from './UI/UI.store';
 import { MailStore } from './Mail/Mail.store';
 import { TagsStore } from './Tags/Tags.store';
+import { WindowManager } from './window-manager';
 import { UsersStore } from './Users/Users.store';
 import { FilesStore } from './Files/Files.store';
 import { FlowsStore } from './Flows/Flows.store';
@@ -29,20 +29,6 @@ import { ContractLineItemsStore } from './ContractLineItems/ContractLineItems.st
 import { FlowEmailVariablesStore } from './FlowEmailVariables/FlowEmailVariables.store';
 import { ExternalSystemInstancesStore } from './ExternalSystemInstances/ExternalSystemInstances.store';
 
-localforage.config({
-  driver: localforage.INDEXEDDB,
-  name: 'customerDB',
-  version: 1.0,
-  storeName: 'customer_os',
-});
-
-configurePersistable({
-  storage: localforage,
-  expireIn: 1000 * 60 * 60 * 24, // 1 day
-  version: 1.0,
-  stringify: false,
-});
-
 export class RootStore {
   demoMode = false;
   transactions: TransactionService;
@@ -61,6 +47,7 @@ export class RootStore {
   contracts: ContractsStore;
   reminders: RemindersStore;
   workFlows: WorkFlowsStore;
+  windowManager: WindowManager;
   globalCache: GlobalCacheStore;
   flowContacts: FlowContactsStore;
   tableViewDefs: TableViewDefsStore;
@@ -77,11 +64,13 @@ export class RootStore {
     this.demoMode = demoMode;
     this.transactions = new TransactionService(this, this.transport);
 
-    this.ui = new UIStore();
+    this.ui = new UIStore(this, this.transport);
+    this.windowManager = new WindowManager(this);
     this.mail = new MailStore(this, this.transport);
     this.tags = new TagsStore(this, this.transport);
     this.files = new FilesStore(this, this.transport);
     this.users = new UsersStore(this, this.transport);
+    this.flows = new FlowsStore(this, this.transport);
     this.flows = new FlowsStore(this, this.transport);
     this.session = new SessionStore(this, this.transport);
     this.settings = new SettingsStore(this, this.transport);
@@ -91,6 +80,7 @@ export class RootStore {
     this.reminders = new RemindersStore(this, this.transport);
     this.workFlows = new WorkFlowsStore(this, this.transport);
     this.globalCache = new GlobalCacheStore(this, this.transport);
+    this.flowSenders = new FlowSendersStore(this, this.transport);
     this.flowContacts = new FlowContactsStore(this, this.transport);
     this.tableViewDefs = new TableViewDefsStore(this, this.transport);
     this.organizations = new OrganizationsStore(this, this.transport);
@@ -98,8 +88,6 @@ export class RootStore {
     this.timelineEvents = new TimelineEventsStore(this, this.transport);
     this.contractLineItems = new ContractLineItemsStore(this, this.transport);
     this.flowEmailVariables = new FlowEmailVariablesStore(this, this.transport);
-    this.flows = new FlowsStore(this, this.transport);
-    this.flowSenders = new FlowSendersStore(this, this.transport);
 
     this.externalSystemInstances = new ExternalSystemInstancesStore(
       this,
@@ -114,8 +102,9 @@ export class RootStore {
     );
 
     when(
-      () => this.isAuthenticated,
+      () => this.isAuthenticated && !this.isHydrated,
       async () => {
+        await Persister.attemptPurge();
         await this.bootstrap();
       },
     );
@@ -158,6 +147,12 @@ export class RootStore {
     return Boolean(this.session.sessionToken);
   }
 
+  get isHydrated() {
+    if (this.demoMode) return true;
+
+    return this.organizations.isHydrated;
+  }
+
   get isBootstrapped() {
     if (this.demoMode) return true;
 
@@ -172,9 +167,16 @@ export class RootStore {
     if (this.demoMode) return false;
 
     return (
+      this.organizations.isBootstrapping ||
       this.tableViewDefs.isLoading ||
       this.settings.isBootstrapping ||
       this.globalCache.isLoading
     );
+  }
+
+  get isSyncing() {
+    if (this.demoMode) return false;
+
+    return this.organizations.isLoading;
   }
 }

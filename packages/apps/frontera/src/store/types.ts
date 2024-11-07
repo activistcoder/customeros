@@ -9,6 +9,7 @@ export type Operation = {
   id: number;
   ref?: string;
   entity: string;
+  tenant?: string;
   entityId?: string;
   diff: rdiffResult[];
 };
@@ -16,6 +17,7 @@ export type GroupOperation = {
   ref?: string;
   ids: string[];
   entity?: string;
+  tenant?: string;
   entityId?: string;
   action: 'APPEND' | 'DELETE' | 'INVALIDATE';
 };
@@ -31,6 +33,10 @@ export type GroupSyncPacket = {
   ref?: string;
   ids: string[];
   action: 'APPEND' | 'DELETE' | 'INVALIDATE';
+};
+
+export type SystemSyncPacket = {
+  action: 'NEW_VERSION_AVAILABLE';
 };
 
 export type LatestDiff = {
