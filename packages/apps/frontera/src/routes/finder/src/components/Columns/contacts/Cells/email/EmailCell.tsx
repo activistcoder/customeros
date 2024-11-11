@@ -1,4 +1,4 @@
-import { useRef, useMemo, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { observer } from 'mobx-react-lite';
 
@@ -28,10 +28,6 @@ export const EmailCell = observer(
     const [isHovered, setIsHovered] = useState(false);
 
     const contactStore = store.contacts.value.get(contactId);
-    const oldEmail = useMemo(
-      () => contactStore?.value?.primaryEmail?.email,
-      [],
-    );
 
     const enrichedContact = contactStore?.value.enrichDetails;
 
@@ -100,22 +96,16 @@ export const EmailCell = observer(
                   store.ui.setSelectionId(
                     contactStore?.value.emails.length || 0 + 1,
                   );
-                  contactStore?.update(
-                    (c) => {
-                      c.emails.push({
-                        id: crypto.randomUUID(),
-                        email: '',
-                        appSource: '',
-                        contacts: [],
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      } as any);
 
-                      return c;
-                    },
-                    { mutate: false },
-                  );
+                  contactStore.value.emails.push({
+                    id: crypto.randomUUID(),
+                    email: '',
+                    appSource: '',
+                    contacts: [],
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  } as any);
                 }
                 store.ui.commandMenu.setContext({
                   ids: [contactStore?.value.id || ''],
@@ -213,21 +203,10 @@ export const EmailCell = observer(
                     (e) => e.email === email,
                   );
 
-                  contactStore?.update(
-                    (c) => {
-                      if (idx === 0) {
-                        c.emails = [];
-                      }
-
-                      if (idx !== undefined && idx > -1) {
-                        c.emails.splice(idx, 1);
-                      }
-
-                      return c;
-                    },
-                    { mutate: false },
-                  );
-                  contactStore?.updateEmail(oldEmail || '', idx);
+                  if (idx !== -1) {
+                    contactStore?.value.emails.splice(idx || 0, 1);
+                  }
+                  contactStore?.commit();
                 }}
               >
                 <div className='overflow-hidden text-ellipsis'>
