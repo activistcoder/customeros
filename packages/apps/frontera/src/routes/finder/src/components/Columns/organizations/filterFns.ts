@@ -53,6 +53,7 @@ const getFilterFn = (filter: FilterItem | undefined | null) => {
         return filterValues.includes(row.value?.relationship);
       },
     )
+
     .with(
       { property: ColumnViewType.OrganizationsCreatedDate },
       (filter) => (row: OrganizationStore) => {
